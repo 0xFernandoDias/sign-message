@@ -1,55 +1,58 @@
-import { ConnectWallet } from "@thirdweb-dev/react";
-import type { NextPage } from "next";
-import styles from "../styles/Home.module.css";
+import { ConnectWallet, useSDK } from "@thirdweb-dev/react"
+import type { NextPage } from "next"
+import { useState } from "react"
 
 const Home: NextPage = () => {
-  return (
-    <div className={styles.container}>
-      <main className={styles.main}>
-        <h1 className={styles.title}>
-          Welcome to <a href="http://thirdweb.com/">thirdweb</a>!
-        </h1>
+	const [address, setAddress] = useState<string>()
+	const [signature, setSignature] = useState<string>()
+	const sdk = useSDK()
+	const message = "Please sign this message to prove you own this address"
 
-        <p className={styles.description}>
-          Get started by configuring your desired network in{" "}
-          <code className={styles.code}>pages/_app.tsx</code>, then modify the{" "}
-          <code className={styles.code}>pages/index.tsx</code> file!
-        </p>
+	async function signMessage() {
+		const sign = await sdk?.wallet.sign(message)
 
-        <div className={styles.connect}>
-          <ConnectWallet />
-        </div>
+		if (!sign) {
+			alert("Failed to sign message")
+			throw new Error("Failed to sign message")
+		}
 
-        <div className={styles.grid}>
-          <a href="https://portal.thirdweb.com/" className={styles.card}>
-            <h2>Portal &rarr;</h2>
-            <p>
-              Guides, references and resources that will help you build with
-              thirdweb.
-            </p>
-          </a>
+		setSignature(sign)
+	}
 
-          <a href="https://thirdweb.com/dashboard" className={styles.card}>
-            <h2>Dashboard &rarr;</h2>
-            <p>
-              Deploy, configure and manage your smart contracts from the
-              dashboard.
-            </p>
-          </a>
+	async function recoverAddress() {
+		if (!signature) return
 
-          <a
-            href="https://portal.thirdweb.com/templates"
-            className={styles.card}
-          >
-            <h2>Templates &rarr;</h2>
-            <p>
-              Discover and clone template projects showcasing thirdweb features.
-            </p>
-          </a>
-        </div>
-      </main>
-    </div>
-  );
-};
+		const addr = sdk?.wallet.recoverAddress(message, signature)
 
-export default Home;
+		if (!addr) {
+			alert("No address")
+			throw new Error("No address")
+		}
+
+		setAddress(addr)
+	}
+
+	return (
+		<div
+			style={{
+				maxWidth: "200px",
+				gap: "14px",
+				display: "flex",
+				flexDirection: "column",
+			}}
+		>
+			<ConnectWallet />
+			<button type="button" onClick={signMessage}>
+				Sign message
+			</button>
+			<p>Signature: {signature}</p>
+			<br />
+			<button type="button" onClick={recoverAddress}>
+				Recover address
+			</button>
+			<p>Address: {address}</p>
+		</div>
+	)
+}
+
+export default Home
